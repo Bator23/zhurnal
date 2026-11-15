@@ -252,7 +252,7 @@ const GROUPS = [
   ]},
   { title: "Объектив", fields: [
     { k: "lens", l: "Объектив", t: "select", src: "lenses", wide: true },
-    { k: "focal", l: "Фокусное, мм", t: "num" }, { adv: 1, k: "focalEnd", l: "Фокусное в конце (вертиго), мм", t: "num" },
+    { k: "focal", l: "Фокусное, мм (из объектива)", t: "num", plain: 1, ph: "выбери объектив" }, { adv: 1, k: "focalEnd", l: "Фокусное в конце (вертиго), мм", t: "num", plain: 1 },
     { adv: 1, k: "tstop", l: "Диафрагма T", t: "chips", src: "tstop", wide: true },
     { k: "focusDist", l: "Дистанция фокуса, м", t: "num", step: 0.1 }
   ]},
@@ -371,6 +371,7 @@ function fieldHTML(f, t) {
   const id = "f-" + f.k, v = t[f.k];
   switch (f.t) {
     case "text": return `<div class="f"><label for="${id}">${f.l}</label><input type="text" id="${id}" data-k="${f.k}" value="${esc(v)}" placeholder="${esc(f.ph || "")}" autocomplete="off"></div>`;
+    case "num": if (f.plain) return `<div class="f"><label for="${id}">${f.l}</label><input type="number" inputmode="decimal" id="${id}" data-k="${f.k}" value="${esc(v)}" placeholder="${esc(f.ph || "")}"></div>`;
     case "num": return `<div class="f"><label for="${id}">${f.l}</label><div class="num"><button class="step" data-step="-${f.step || 1}" data-k="${f.k}" aria-label="минус">−</button><input type="number" inputmode="decimal" id="${id}" data-k="${f.k}" value="${esc(v)}" step="${f.step || 1}"><button class="step" data-step="${f.step || 1}" data-k="${f.k}" aria-label="плюс">+</button></div></div>`;
     case "select": { const o = opts(f); const has = o.includes(v);
       return `<div class="f"><label for="${id}">${f.l}</label><select id="${id}" data-k="${f.k}"><option value="">—</option>${o.map(x => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("")}${v && !has ? `<option selected>${esc(v)}</option>` : ""}</select></div>`; }
@@ -638,6 +639,20 @@ function openBoard() {
   document.body.appendChild(d);
 }
 $("#slate").addEventListener("click", openBoard);
+
+
+/* ---------- iOS: no zoom on fast repeated taps ---------- */
+(() => {
+  let last = 0;
+  document.addEventListener("touchend", e => {
+    const b = e.target.closest && e.target.closest("button, .chip, .step");
+    const now = Date.now();
+    if (b && now - last < 400) { e.preventDefault(); b.click(); }
+    last = now;
+  }, { passive: false });
+  document.addEventListener("dblclick", e => e.preventDefault(), { passive: false });
+  document.addEventListener("gesturestart", e => e.preventDefault(), { passive: false });
+})();
 
 /* ---------- boot ---------- */
 loadLocal(); renderAll(); show("rec");
