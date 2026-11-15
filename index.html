@@ -333,7 +333,7 @@ function freshTake() {
   const st = S.settings;
   return { id: uid(), created: Date.now(), updated: Date.now(), deleted: false,
     scene: st.scenes[0] || "1", setup: 1, shot: 1, take: 1, cam: "A", roll: "A001", clip: "C001",
-    tStart: "", tEnd: "", tcIn: "", tcOut: "", camera: st.cameras[0] || "", codec: "", sensor: "", fps: "25", shutter: "180°", iso: "800", wb: "5600K", filters: [],
+    tStart: "", tEnd: "", tcIn: "", tcOut: "", camera: st.cameras[0] || "", codec: "", sensor: "", fps: st.fps[0] || "24", shutter: st.shutter[0] || "180°", iso: st.iso[0] || "800", wb: st.wb[0] || "5600K", filters: [],
     lens: "", focal: "", focalEnd: "", tstop: "", focusDist: "", camHeight: "", tilt: "", distActor: "", distBg: "",
     move: "статика", speed: "", moveLen: "", moveNote: "", aiTask: [], markers: [], markersNote: "", characters: "", lightK: "", weather: "", lightChange: false, pairWith: "",
     plate: false, grey: false, grid: false, setupPhoto: false, rating: "", note: "", photos: [] };
@@ -447,7 +447,7 @@ function renderLog() {
   const v = $("#v-log"); const l = live();
   if (!l.length) { v.innerHTML = `<p class="empty">Журнал пуст. Нажми «＋ Дубль», чтобы начать.</p>`; return; }
   const by = new Map(); l.forEach(t => { if (!by.has(t.scene)) by.set(t.scene, []); by.get(t.scene).push(t); });
-  v.innerHTML = `<p class="hint" style="margin-top:12px">${l.length} дубл. · хороших: ${l.filter(t => t.rating === "хороший").length}</p>` + [...by.entries()].map(([sc, arr]) => `<h3 class="scene-h">${esc(sc)}</h3>` + arr.map(t => {
+  v.innerHTML = `<button class="big-btn" id="newBlank">＋ Новая пустая запись</button><p class="hint" style="margin-top:12px">${l.length} дубл. · хороших: ${l.filter(t => t.rating === "хороший").length}</p>` + [...by.entries()].map(([sc, arr]) => `<h3 class="scene-h">${esc(sc)}</h3>` + arr.map(t => {
     const r = t.rating === "хороший" ? "good" : t.rating === "запасной" ? "spare" : t.rating === "брак" ? "bad" : "";
     const d = [simple() ? "кам " + t.cam : t.cam + " " + t.roll + t.clip, t.focal ? t.focal + " мм" : "", t.fps ? t.fps + " fps" : "", t.move, (t.aiTask || []).join(", "), t.tStart ? "⏱ " + t.tStart : ""].filter(Boolean).join(" · ");
     return `<div class="entry ${t.id === S.current ? "current" : ""}"><div><div class="k">Кадр ${esc(t.shot)} · Сет ${esc(t.setup)} · Дубль ${esc(t.take)} ${r ? `<span class="pill ${r}">${esc(t.rating)}</span>` : ""}</div><div class="d">${esc(d)}</div>${t.note ? `<div class="d">${esc(t.note)}</div>` : ""}</div>
@@ -460,7 +460,7 @@ function renderSet() {
   const st = S.settings;
   const meta = [["project", "Проект"], ["unit", "Юнит"], ["date", "Дата смены"], ["director", "Режиссёр"], ["dp", "Оператор"], ["supervisor", "AI-супервайзер"]];
   $("#v-set").innerHTML = `<div class="group"><h2>Проект</h2><div class="row">${meta.map(([k, l]) => `<div class="f"><label for="s-${k}">${l}</label><input type="text" id="s-${k}" data-s="${k}" value="${esc(st[k])}"></div>`).join("")}</div></div>
-  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v18. Скрыты ролл/клип, TC, кодек, фильтры, диафрагма, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
+  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v19. Скрыты ролл/клип, TC, кодек, фильтры, диафрагма, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
   <div class="group"><h2>Списки</h2><p class="hint">Одна строка — один вариант. Изменения сразу появляются в форме.</p>${LISTS.map(k => `<div class="f"><label for="l-${k}">${LIST_LABELS[k]}</label><textarea id="l-${k}" data-list="${k}" rows="${Math.min(8, st[k].length + 1)}">${esc(st[k].join("\n"))}</textarea></div>`).join("")}
   <button class="big-btn" id="resetLists">Вернуть списки по умолчанию</button></div>`;
 }
@@ -542,6 +542,11 @@ $("#b-board").onclick = () => openBoard(); $("#b-scene").onclick = () => spawn("
 /* ---------- journal interactions ---------- */
 $("#v-log").addEventListener("click", e => {
   const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "newBlank") {
+    const c = cur(); if (c && c.tStart && !c.tEnd) { c.tEnd = nowTime(); touch(c); }
+    const n = freshTake(); S.takes.push(n); S.current = n.id; touch(n); renderAll(); show("rec");
+    toast("Новая пустая запись: заполни сцену, кадр, сетап и дубль"); return;
+  }
   if (b.dataset.open) { S.current = b.dataset.open; saveLocal(); renderSlate(); renderRec(); show("rec"); return; }
   if (b.dataset.del) {
     if (armedDelete !== b.dataset.del) { armedDelete = b.dataset.del; renderLog(); setTimeout(() => { if (armedDelete === b.dataset.del) { armedDelete = null; renderLog(); } }, 4000); return; }
@@ -679,7 +684,7 @@ function openBoard() {
   d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)}</span></div>
   <div class="bn"><div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сет</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div></div>
   <div class="bm">${meta.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
-  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v18</div>`;
+  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v19</div>`;
   d.addEventListener("click", () => d.remove());
   document.body.appendChild(d);
   requestAnimationFrame(() => d.querySelectorAll(".bn b").forEach(el => {
