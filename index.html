@@ -44,7 +44,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .wrap { max-width: 760px; margin: 0 auto; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
-html, body, button, .chip, .step, .big, .board, .tab { touch-action: manipulation; }
+html, body { touch-action: pan-x pan-y; }
+button, .chip, .step, .big, .board, .tab, input, select, textarea, label { touch-action: manipulation; }
+input, select, textarea { font-size: 16px !important; }
 button, .chip, .step { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -252,7 +254,7 @@ const GROUPS = [
   ]},
   { title: "Объектив", fields: [
     { k: "lens", l: "Объектив", t: "select", src: "lenses", wide: true },
-    { k: "focal", l: "Фокусное, мм (из объектива)", t: "num", plain: 1, ph: "выбери объектив" }, { adv: 1, k: "focalEnd", l: "Фокусное в конце (вертиго), мм", t: "num", plain: 1 },
+    { hide: 1, k: "focal", l: "Фокусное, мм", t: "num", plain: 1 }, { adv: 1, k: "focalEnd", l: "Фокусное в конце (вертиго), мм", t: "num", plain: 1 },
     { adv: 1, k: "tstop", l: "Диафрагма T", t: "chips", src: "tstop", wide: true },
     { k: "focusDist", l: "Дистанция фокуса, м", t: "num", step: 0.1 }
   ]},
@@ -390,7 +392,7 @@ function renderRec() {
   v.innerHTML = GROUPS.map(g => {
     const wide = g.fields.filter(f => f.wide || f.t === "check"), narrow = g.fields.filter(f => !f.wide && f.t !== "check");
     const parts = []; let buf = [];
-    g.fields.filter(f => !(f.adv && simple())).forEach(f => { if (f.wide) { if (buf.length) { parts.push(`<div class="row">${buf.join("")}</div>`); buf = []; } parts.push(fieldHTML(f, t)); } else buf.push(fieldHTML(f, t)); });
+    g.fields.filter(f => !f.hide && !(f.adv && simple())).forEach(f => { if (f.wide) { if (buf.length) { parts.push(`<div class="row">${buf.join("")}</div>`); buf = []; } parts.push(fieldHTML(f, t)); } else buf.push(fieldHTML(f, t)); });
     if (buf.length) parts.push(`<div class="row">${buf.join("")}</div>`);
     return `<div class="group"><h2>${g.title}</h2>${parts.join("")}</div>`;
   }).join("");
@@ -628,7 +630,7 @@ function openBoard() {
   const t = cur(); if (!t) return;
   const st = S.settings; const d = document.createElement("div"); d.className = "board"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Хлопушка");
   const filt = (t.filters || []).filter(x => x && x !== "нет").join(", ");
-  const meta = [["Камера", t.cam + (t.camera ? " · " + t.camera.replace(/^ARRI\s*(Alexa\s*)?/i, "") : "")], ["Объектив", t.lens], ["Фокусное", t.focal ? t.focal + " мм" : ""],
+  const meta = [["Камера", t.cam + (t.camera ? " · " + t.camera.replace(/^ARRI\s*(Alexa\s*)?/i, "") : "")], ["Объектив", t.lens], ["Фокусное", !t.lens && t.focal ? t.focal + " мм" : ""],
     ["fps", t.fps], ["Выдержка", t.shutter], ["ISO", t.iso], ["ББ", t.wb], ["T", t.tstop], ["Фокус", t.focusDist ? t.focusDist + " м" : ""], ["Высота", t.camHeight ? t.camHeight + " см" : ""], ["Фильтр", filt], ["Ролл", simple() ? "" : (t.roll || "") + (t.clip || "")]]
     .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "");
   d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)}</span></div>
