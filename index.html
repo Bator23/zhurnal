@@ -121,6 +121,18 @@ textarea { min-height: 72px; resize: vertical; }
 .acts .del.arm { border-color: var(--bad); color: var(--bad); }
 .empty { color: var(--muted); padding: 24px 0; text-align: center; }
 
+
+.slate { cursor: pointer; }
+.board { position: fixed; inset: 0; z-index: 50; background: #fff; color: #000; display: grid; grid-template-rows: auto 1fr auto; padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); font-family: var(--font-mono); }
+.board .bh { display: flex; justify-content: space-between; gap: 12px; font-size: clamp(14px, 4vw, 28px); font-weight: 600; border-bottom: 4px solid #000; padding-bottom: 8px; }
+.board .bg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; align-content: center; }
+.board .bc { border: 3px solid #000; margin: -1.5px; padding: 8px 12px; min-width: 0; }
+.board .bc small { display: block; font-family: var(--font-ui); font-size: clamp(12px, 3.5vw, 22px); text-transform: uppercase; letter-spacing: .08em; }
+.board .bc b { display: block; font-size: clamp(56px, 22vw, 200px); line-height: 1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.board .bc.scene b { font-size: clamp(40px, 14vw, 140px); }
+.board .bf { display: flex; justify-content: space-between; gap: 12px; font-size: clamp(14px, 4.5vw, 30px); border-top: 4px solid #000; padding-top: 8px; }
+.board .bx { font-family: var(--font-ui); font-size: 13px; color: #555; text-align: center; margin-top: 6px; }
+
 /* toast */
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; z-index: 20; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); }
 .toast button { border: 0; background: none; color: var(--accent); font-weight: 600; }
@@ -156,7 +168,7 @@ textarea { min-height: 72px; resize: vertical; }
   <button class="big primary" id="b-take">＋ Дубль</button>
   <button class="big" id="b-shot">＋ Кадр</button>
   <button class="big" id="b-setup">＋ Сетап</button>
-  <div class="sub"><button id="b-scene">Новая сцена</button><button id="b-dup">Пара 24 / 48 fps</button></div>
+  <div class="sub"><button id="b-board">Хлопушка</button><button id="b-scene">Новая сцена</button><button id="b-dup">Пара 24 / 48 fps</button></div>
 </div></div>
 
 <div id="pdfHost" style="position:fixed;left:-20000px;top:0;width:1120px;background:#fff;color:#111"></div>
@@ -449,10 +461,10 @@ function spawn(kind) {
   if (kind === "dup50") { n.take = num(t.take) + 1; n.fps = t.fps === "48" ? "24" : "48"; n.pairWith = `кадр ${t.shot} · сет ${t.setup} · дубль ${t.take} (${t.fps} fps)`; }
   S.takes.push(n); S.current = n.id; touch(n); renderSlate(); renderRec(); window.scrollTo(0, 0);
   const names = { take: "Новый дубль", shot: "Новый кадр", setup: "Новый сетап", scene: "Новая сцена", dup50: "Пара в " + n.fps + " fps" };
-  toast(`${names[kind]}: ${n.cam} ${n.roll}${n.clip}`, "Отменить", () => { n.deleted = true; touch(n); S.current = t.id; saveLocal(); renderAll(); });
+  toast(`${names[kind]}: кадр ${n.shot} · сет ${n.setup} · дубль ${n.take}`, "Отменить", () => { n.deleted = true; touch(n); S.current = t.id; saveLocal(); renderAll(); });
 }
 $("#b-take").onclick = () => spawn("take"); $("#b-shot").onclick = () => spawn("shot"); $("#b-setup").onclick = () => spawn("setup");
-$("#b-scene").onclick = () => spawn("scene"); $("#b-dup").onclick = () => spawn("dup50");
+$("#b-board").onclick = () => openBoard(); $("#b-scene").onclick = () => spawn("scene"); $("#b-dup").onclick = () => spawn("dup50");
 
 /* ---------- journal interactions ---------- */
 $("#v-log").addEventListener("click", e => {
@@ -581,6 +593,21 @@ $("#v-exp").addEventListener("change", e => {
   };
   rd.readAsText(f);
 });
+
+
+/* ---------- slate board ---------- */
+function openBoard() {
+  const t = cur(); if (!t) return;
+  const st = S.settings; const d = document.createElement("div"); d.className = "board"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Хлопушка");
+  d.innerHTML = `<div class="bh"><span>${esc(st.project)}</span><span>${esc(st.date)}</span></div>
+  <div class="bg"><div class="bc scene" style="grid-column:1/-1"><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div>
+  <div class="bc"><small>Кадр</small><b>${esc(t.shot)}</b></div><div class="bc"><small>Сетап</small><b>${esc(t.setup)}</b></div>
+  <div class="bc" style="grid-column:1/-1"><small>Дубль</small><b>${esc(t.take)}</b></div></div>
+  <div><div class="bf"><span>КАМ ${esc(t.cam)}</span><span>${esc(t.fps)} fps</span><span>${esc(t.focal ? t.focal + " мм" : "")}</span></div><div class="bx">Нажми, чтобы закрыть</div></div>`;
+  d.addEventListener("click", () => d.remove());
+  document.body.appendChild(d);
+}
+$("#slate").addEventListener("click", openBoard);
 
 /* ---------- boot ---------- */
 loadLocal(); renderAll(); show("rec");
