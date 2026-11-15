@@ -133,6 +133,15 @@ textarea { min-height: 72px; resize: vertical; }
 .board .bf { display: flex; justify-content: space-between; gap: 12px; font-size: clamp(14px, 4.5vw, 30px); border-top: 4px solid #000; padding-top: 8px; }
 .board .bx { font-family: var(--font-ui); font-size: 13px; color: #555; text-align: center; margin-top: 6px; }
 
+
+.board .bh2 { font-family: var(--font-ui); font-size: clamp(12px, 3.4vw, 22px); padding-top: 4px; }
+.board .bm { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 4px solid #000; }
+.board .bm div { border-bottom: 2px solid #000; border-right: 2px solid #000; padding: 4px 6px; min-width: 0; }
+.board .bm div:nth-child(3n) { border-right: 0; }
+.board .bm small { display: block; font-family: var(--font-ui); font-size: clamp(10px, 2.8vw, 16px); text-transform: uppercase; letter-spacing: .06em; }
+.board .bm b { display: block; font-size: clamp(14px, 4.6vw, 30px); overflow-wrap: anywhere; line-height: 1.15; }
+.board { grid-template-rows: auto auto 1fr auto; }
+.board .bc b { font-size: clamp(48px, 17vw, 170px); }
 /* toast */
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; z-index: 20; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); }
 .toast button { border: 0; background: none; color: var(--accent); font-weight: 600; }
@@ -599,11 +608,15 @@ $("#v-exp").addEventListener("change", e => {
 function openBoard() {
   const t = cur(); if (!t) return;
   const st = S.settings; const d = document.createElement("div"); d.className = "board"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Хлопушка");
-  d.innerHTML = `<div class="bh"><span>${esc(st.project)}</span><span>${esc(st.date)}</span></div>
+  const filt = (t.filters || []).filter(x => x && x !== "нет").join(", ");
+  const meta = [["Камера", t.cam + (t.camera ? " · " + t.camera.replace(/^ARRI\s*/i, "") : "")], ["Объектив", t.lens], ["Фокусное", t.focal ? t.focal + " мм" : ""],
+    ["fps", t.fps], ["Выдержка", t.shutter], ["ISO", t.iso], ["ББ", t.wb], ["T", t.tstop], ["Фокус", t.focusDist ? t.focusDist + " м" : ""], ["Высота", t.camHeight ? t.camHeight + " см" : ""], ["Фильтр", filt], ["Ролл", simple() ? "" : (t.roll || "") + (t.clip || "")]]
+    .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "");
+  d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)}</span></div><div class="bh2">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}</div>
   <div class="bg"><div class="bc scene" style="grid-column:1/-1"><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div>
   <div class="bc"><small>Кадр</small><b>${esc(t.shot)}</b></div><div class="bc"><small>Сетап</small><b>${esc(t.setup)}</b></div>
   <div class="bc" style="grid-column:1/-1"><small>Дубль</small><b>${esc(t.take)}</b></div></div>
-  <div><div class="bf"><span>КАМ ${esc(t.cam)}</span><span>${esc(t.fps)} fps</span><span>${esc(t.focal ? t.focal + " мм" : "")}</span></div><div class="bx">Нажми, чтобы закрыть</div></div>`;
+  <div><div class="bm">${meta.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div><div class="bx">Нажми, чтобы закрыть</div></div>`;
   d.addEventListener("click", () => d.remove());
   document.body.appendChild(d);
 }
