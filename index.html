@@ -512,7 +512,8 @@ async function saveFile(filename, data) {
   const blob = data instanceof Blob ? data : new Blob([data], { type });
   try {
     const file = new File([blob], filename, { type });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: filename }); toast("Готово"); return; }
+    const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (mobile && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: filename }); toast("Готово"); return; }
   } catch (e) { if (e && e.name === "AbortError") { toast("Отменено"); return; } }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename;
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); toast("Файл сохранён");
