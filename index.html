@@ -444,7 +444,7 @@ function renderRec() {
 /* ---------- render: journal ---------- */
 let armedDelete = null;
 function renderLog() {
-  const v = $("#v-log"); const l = live();
+  const v = $("#v-log"); const l = live().slice().sort(takeOrder);
   if (!l.length) { v.innerHTML = `<p class="empty">Журнал пуст. Нажми «＋ Дубль», чтобы начать.</p>`; return; }
   const by = new Map(); l.forEach(t => { if (!by.has(t.scene)) by.set(t.scene, []); by.get(t.scene).push(t); });
   v.innerHTML = `<button class="big-btn" id="newBlank">＋ Новая пустая запись</button><p class="hint" style="margin-top:12px">${l.length} дубл. · хороших: ${l.filter(t => t.rating === "хороший").length}</p>` + [...by.entries()].map(([sc, arr]) => `<h3 class="scene-h">${esc(sc)}</h3>` + arr.map(t => {
@@ -460,7 +460,7 @@ function renderSet() {
   const st = S.settings;
   const meta = [["project", "Проект"], ["unit", "Юнит"], ["date", "Дата смены"], ["director", "Режиссёр"], ["dp", "Оператор"], ["supervisor", "AI-супервайзер"]];
   $("#v-set").innerHTML = `<div class="group"><h2>Проект</h2><div class="row">${meta.map(([k, l]) => `<div class="f"><label for="s-${k}">${l}</label><input type="text" id="s-${k}" data-s="${k}" value="${esc(st[k])}"></div>`).join("")}</div></div>
-  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v19. Скрыты ролл/клип, TC, кодек, фильтры, диафрагма, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
+  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v20. Скрыты ролл/клип, TC, кодек, фильтры, диафрагма, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
   <div class="group"><h2>Списки</h2><p class="hint">Одна строка — один вариант. Изменения сразу появляются в форме.</p>${LISTS.map(k => `<div class="f"><label for="l-${k}">${LIST_LABELS[k]}</label><textarea id="l-${k}" data-list="${k}" rows="${Math.min(8, st[k].length + 1)}">${esc(st[k].join("\n"))}</textarea></div>`).join("")}
   <button class="big-btn" id="resetLists">Вернуть списки по умолчанию</button></div>`;
 }
@@ -609,7 +609,13 @@ async function saveFile(filename, data) {
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000); toast("Файл сохранён");
 }
 const fileBase = () => `${S.settings.project}_${S.settings.unit}_${S.settings.date}`.replace(/[^\p{L}\p{N}._-]+/gu, "_");
-function sortedTakes() { const sc = S.settings.scenes; return live().slice().sort((a, b) => ((sc.indexOf(a.scene) + 1 || 999) - (sc.indexOf(b.scene) + 1 || 999)) || a.created - b.created); }
+function takeOrder(a, b) {
+  const sc = S.settings.scenes, ia = sc.indexOf(a.scene), ib = sc.indexOf(b.scene);
+  const n = v => parseFloat(String(v).replace(",", ".")) || 0;
+  return ((ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib)) || String(a.scene).localeCompare(String(b.scene), "ru", { numeric: true })
+    || (n(a.shot) - n(b.shot)) || (n(a.setup) - n(b.setup)) || (n(a.take) - n(b.take)) || (a.created - b.created);
+}
+function sortedTakes() { return live().slice().sort(takeOrder); }
 
 function csv() {
   const cols = [["scene", "Сцена"], ["setup", "Сетап"], ["shot", "Кадр"], ["take", "Дубль"], ["cam", "Камера"], ["roll", "Ролл"], ["clip", "Клип"], ["tStart", "Мотор (время)"], ["tEnd", "Стоп (время)"], ["tcIn", "TC начала"], ["tcOut", "TC конца"],
@@ -684,7 +690,7 @@ function openBoard() {
   d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)}</span></div>
   <div class="bn"><div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сет</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div></div>
   <div class="bm">${meta.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
-  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v19</div>`;
+  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v20</div>`;
   d.addEventListener("click", () => d.remove());
   document.body.appendChild(d);
   requestAnimationFrame(() => d.querySelectorAll(".bn b").forEach(el => {
