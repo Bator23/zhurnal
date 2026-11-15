@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Журнал съёмки</title>
+<title>Bator Slate</title>
 <meta name="theme-color" content="#12161c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Журнал">
+<meta name="apple-mobile-web-app-title" content="Bator Slate">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
@@ -162,6 +162,18 @@ textarea { min-height: 72px; resize: vertical; }
 .board .bm div:nth-child(2n) { border-right: 0; }
 .board .bm b { font-size: clamp(26px, 10.5vw, 96px); line-height: 1.05; overflow-wrap: anywhere; }
 .board .bx { margin-top: 0; font-size: 12px; }
+
+/* slate board v3: big numbers, compact data */
+.board { grid-template-rows: auto 1fr auto auto; gap: 6px; }
+.board .bn { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; border: 3px solid #000; min-height: 0; }
+.board .bn div { border-right: 3px solid #000; border-bottom: 3px solid #000; padding: 4px 8px; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.board .bn div:nth-child(2n) { border-right: 0; }
+.board .bn div:nth-child(n+3) { border-bottom: 0; }
+.board .bn b { font-size: min(30vw, 15vh); line-height: .95; white-space: nowrap; overflow-wrap: normal; word-break: keep-all; }
+.board .bm { grid-auto-rows: auto; }
+.board .bm div { padding: 2px 8px; }
+.board .bm small { font-size: clamp(10px, 2.6vw, 18px); }
+.board .bm b { font-size: clamp(18px, 6.4vw, 56px); line-height: 1.1; }
 /* toast */
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; z-index: 20; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); }
 .toast button { border: 0; background: none; color: var(--accent); font-weight: 600; }
@@ -174,7 +186,7 @@ textarea { min-height: 72px; resize: vertical; }
 
 <div class="top"><div class="wrap">
   <div class="brand">
-    <h1 id="projName">Журнал съёмки</h1>
+    <h1 id="projName">Bator Slate</h1>
     <span class="sync"><span class="dot ok" id="syncDot"></span><span id="syncText">сохраняется на телефоне</span></span>
   </div>
   <div class="slate" id="slate"></div>
@@ -362,7 +374,7 @@ const sceneShort = s => String(s || "").split("·")[0].trim() || s;
 /* ---------- render: slate ---------- */
 function renderSlate() {
   const t = cur(); if (!t) return;
-  $("#projName").textContent = `${S.settings.project} · ${S.settings.unit}`;
+  $("#projName").textContent = `Bator Slate · ${S.settings.project} · ${S.settings.unit}`;
   $("#slate").innerHTML = `<div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сетап</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div>
   <div class="clip"><span>${esc(t.cam)} · ${simple() ? (t.tStart ? "⏱ " + esc(t.tStart) : "время —") : esc(t.roll) + esc(t.clip)}</span><span>${esc(t.fps)} fps · ${esc(t.focal ? t.focal + " мм" : "мм —")}</span></div>`;
 }
@@ -577,7 +589,7 @@ function pdfHTML() {
   const td = s => `<td>${esc(s)}</td>`;
   const head = ["Кадр/Сет/Дубль", "Клип · время · TC", "Камера · кодек", "Объектив", "fps · выдержка · ISO · WB", "Высота · наклон · дистанции", "Движение", "Метки / опоры", "Что меняет ИИ", "Свет · условия", "Контроль", "Оценка · заметка"];
   const css = `*{box-sizing:border-box}body,div{font-family:Arial,Helvetica,sans-serif;color:#111}h1{font-size:20px;margin:0 0 4px}p.m{margin:0 0 10px;font-size:11px;color:#444}h2{font-size:14px;margin:14px 0 6px;color:#1d4f7a}table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}th,td{border:1px solid #bbb;padding:3px 4px;vertical-align:top;overflow-wrap:anywhere}th{background:#e6eef6;text-align:left}tr{page-break-inside:avoid}`;
-  return `<style>${css}</style><h1>${esc(st.project)} · ${esc(st.unit)} · ${esc(st.date)}</h1><p class="m">Режиссёр: ${esc(st.director)} · Оператор: ${esc(st.dp)} · AI-супервайзер: ${esc(st.supervisor)} · Дублей: ${rows.length} · Сформировано: ${new Date().toLocaleString("ru-RU")}</p>` +
+  return `<style>${css}</style><h1>${esc(st.project)} · ${esc(st.unit)} · ${esc(st.date)}</h1><p class="m">Bator Slate · журнал AI-супервайзера · Режиссёр: ${esc(st.director)} · Оператор: ${esc(st.dp)} · AI-супервайзер: ${esc(st.supervisor)} · Дублей: ${rows.length} · Сформировано: ${new Date().toLocaleString("ru-RU")}</p>` +
     [...by.entries()].map(([sc, arr]) => `<h2>Сцена ${esc(sc)}</h2><table><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${arr.map(t => `<tr>${[
       `${t.shot} / ${t.setup} / ${t.take}`,
       [simple() ? "кам " + t.cam : t.cam + " " + t.roll + t.clip, t.tStart && ("⏱ " + t.tStart + (t.tEnd ? "–" + t.tEnd : "")), t.tcIn && ("TC " + t.tcIn + (t.tcOut ? "–" + t.tcOut : ""))].filter(Boolean).join("\n"),
@@ -639,6 +651,10 @@ function openBoard() {
   <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть</div>`;
   d.addEventListener("click", () => d.remove());
   document.body.appendChild(d);
+  requestAnimationFrame(() => d.querySelectorAll(".bn b").forEach(el => {
+    let size = parseFloat(getComputedStyle(el).fontSize), guard = 0;
+    while ((el.scrollWidth > el.clientWidth + 1) && size > 24 && guard++ < 80) { size -= 3; el.style.fontSize = size + "px"; }
+  }));
 }
 $("#slate").addEventListener("click", openBoard);
 

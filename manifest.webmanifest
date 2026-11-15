@@ -1,6 +1,6 @@
 {
-  "name": "Журнал съёмки",
-  "short_name": "Журнал",
+  "name": "Bator Slate — журнал AI-супервайзера",
+  "short_name": "Bator Slate",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
