@@ -233,7 +233,7 @@ const GROUPS = [
     { k: "characters", l: "Персонажи в кадре", t: "text", ph: "парень, девушка" },
     { adv: 1, k: "lightK", l: "Свет: температура ключа, K", t: "num", step: 100 },
     { adv: 1, k: "weather", l: "Условия", t: "chips", src: "weather", wide: true },
-    { adv: 1, k: "lightChange", l: "Свет меняется внутри дубля", t: "check" },
+    { k: "lightChange", l: "Динамический свет (тени веток, движение света)", t: "check" },
     { adv: 1, k: "pairWith", l: "Пара для сравнения (24/48 fps)", t: "text", ph: "1-2-3 дубль 1" }
   ]},
   { title: "Контроль", fields: [
@@ -545,7 +545,7 @@ function pdfHTML() {
       [t.move, t.speed, t.moveLen && (t.moveLen + " м"), t.moveNote].filter(Boolean).join(" · "),
       [(t.markers || []).join(", "), t.markersNote].filter(Boolean).join(" · "),
       [(t.aiTask || []).join(", "), t.pairWith && ("пара: " + t.pairWith), t.characters && ("в кадре: " + t.characters)].filter(Boolean).join(" · "),
-      [t.lightK && (t.lightK + "K"), t.weather, t.lightChange && "свет меняется"].filter(Boolean).join(" · "),
+      [t.lightK && (t.lightK + "K"), t.weather, t.lightChange && "динамический свет"].filter(Boolean).join(" · "),
       [t.plate && "плейт", t.grey && "серая карта", t.grid && "сетка", t.setupPhoto && "фото", (t.photos || []).length ? ("фото: " + t.photos.length) : ""].filter(Boolean).join(", "),
       [t.rating, t.note].filter(Boolean).join(" — ")
     ].map(td).join("")}</tr>`).join("")}</tbody></table>`).join("");
