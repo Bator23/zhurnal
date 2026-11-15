@@ -174,6 +174,16 @@ textarea { min-height: 72px; resize: vertical; }
 .board .bm div { padding: 2px 8px; }
 .board .bm small { font-size: clamp(10px, 2.6vw, 18px); }
 .board .bm b { font-size: clamp(18px, 6.4vw, 56px); line-height: 1.1; }
+
+/* slate board v4: numbers block hugs digits, data fills the rest */
+.board { grid-template-rows: auto auto 1fr auto; }
+.board .bn { grid-template-rows: auto auto; }
+.board .bn div { justify-content: flex-start; padding: 2px 8px 6px; }
+.board .bn b { font-size: min(30vw, 13vh); line-height: .9; }
+.board .bm { grid-auto-rows: 1fr; }
+.board .bm div { justify-content: center; padding: 4px 8px; }
+.board .bm small { font-size: clamp(12px, 3.4vw, 22px); }
+.board .bm b { font-size: clamp(26px, 11vw, 96px); line-height: 1.02; }
 /* toast */
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; z-index: 20; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); }
 .toast button { border: 0; background: none; color: var(--accent); font-weight: 600; }
