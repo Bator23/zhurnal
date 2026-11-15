@@ -195,7 +195,7 @@ const LIST_LABELS = { cameras: "Камеры", lenses: "Объективы (фо
 const GROUPS = [
   { title: "Кадр и клип", fields: [
     { k: "scene", l: "Сцена", t: "select", src: "scenes", wide: true },
-    { k: "setup", l: "Сетап", t: "num" }, { k: "shot", l: "Кадр", t: "num" }, { k: "take", l: "Дубль", t: "num" },
+    { k: "shot", l: "Кадр", t: "num" }, { k: "setup", l: "Сетап (вариант)", t: "num" }, { k: "take", l: "Дубль", t: "num" },
     { k: "cam", l: "Камера A / B", t: "chips", opts: ["A", "B"] },
     { adv: 1, k: "roll", l: "Ролл (карта)", t: "text", ph: "A001" }, { adv: 1, k: "clip", l: "Клип", t: "text", ph: "C001" },
     { k: "marks", l: "Время дубля (часы телефона)", t: "marks", wide: true },
@@ -322,7 +322,7 @@ const sceneShort = s => String(s || "").split("·")[0].trim() || s;
 function renderSlate() {
   const t = cur(); if (!t) return;
   $("#projName").textContent = `${S.settings.project} · ${S.settings.unit}`;
-  $("#slate").innerHTML = `<div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Сетап</small><b>${esc(t.setup)}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div>
+  $("#slate").innerHTML = `<div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сетап</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div>
   <div class="clip"><span>${esc(t.cam)} · ${simple() ? (t.tStart ? "⏱ " + esc(t.tStart) : "время —") : esc(t.roll) + esc(t.clip)}</span><span>${esc(t.fps)} fps · ${esc(t.focal ? t.focal + " мм" : "мм —")}</span></div>`;
 }
 
@@ -366,7 +366,7 @@ function renderLog() {
   v.innerHTML = `<p class="hint" style="margin-top:12px">${l.length} дубл. · хороших: ${l.filter(t => t.rating === "хороший").length}</p>` + [...by.entries()].map(([sc, arr]) => `<h3 class="scene-h">${esc(sc)}</h3>` + arr.map(t => {
     const r = t.rating === "хороший" ? "good" : t.rating === "запасной" ? "spare" : t.rating === "брак" ? "bad" : "";
     const d = [simple() ? "кам " + t.cam : t.cam + " " + t.roll + t.clip, t.focal ? t.focal + " мм" : "", t.fps ? t.fps + " fps" : "", t.move, (t.aiTask || []).join(", "), t.tStart ? "⏱ " + t.tStart : ""].filter(Boolean).join(" · ");
-    return `<div class="entry ${t.id === S.current ? "current" : ""}"><div><div class="k">Сет ${esc(t.setup)} · Кадр ${esc(t.shot)} · Дубль ${esc(t.take)} ${r ? `<span class="pill ${r}">${esc(t.rating)}</span>` : ""}</div><div class="d">${esc(d)}</div>${t.note ? `<div class="d">${esc(t.note)}</div>` : ""}</div>
+    return `<div class="entry ${t.id === S.current ? "current" : ""}"><div><div class="k">Кадр ${esc(t.shot)} · Сет ${esc(t.setup)} · Дубль ${esc(t.take)} ${r ? `<span class="pill ${r}">${esc(t.rating)}</span>` : ""}</div><div class="d">${esc(d)}</div>${t.note ? `<div class="d">${esc(t.note)}</div>` : ""}</div>
     <div class="acts"><button data-open="${t.id}">Открыть</button><button class="del ${armedDelete === t.id ? "arm" : ""}" data-del="${t.id}">${armedDelete === t.id ? "Точно?" : "Удалить"}</button></div></div>`;
   }).join("")).join("");
 }
@@ -443,10 +443,10 @@ function spawn(kind) {
   n.clip = incCode(t.clip) || t.clip;
   const num = v => parseInt(v, 10) || 0;
   if (kind === "take") n.take = num(t.take) + 1;
-  if (kind === "shot") { n.shot = num(t.shot) + 1; n.take = 1; }
-  if (kind === "setup") { n.setup = num(t.setup) + 1; n.shot = num(t.shot) + 1; n.take = 1; CLEAR_SETUP.forEach(k => n[k] = typeof t[k] === "boolean" ? false : ""); n.move = "статика"; n.markers = [];}
+  if (kind === "shot") { n.shot = num(t.shot) + 1; n.setup = 1; n.take = 1; CLEAR_SETUP.forEach(k => n[k] = typeof t[k] === "boolean" ? false : ""); n.move = "статика"; n.markers = []; }
+  if (kind === "setup") { n.setup = num(t.setup) + 1; n.take = 1; }
   if (kind === "scene") { const sc = S.settings.scenes; const i = sc.indexOf(t.scene); n.scene = sc[i + 1] || t.scene; n.setup = 1; n.shot = 1; n.take = 1; CLEAR_SETUP.forEach(k => n[k] = typeof t[k] === "boolean" ? false : ""); n.move = "статика"; n.markers = []; n.aiTask = []; n.characters = ""; }
-  if (kind === "dup50") { n.take = num(t.take) + 1; n.fps = t.fps === "48" ? "24" : "48"; n.pairWith = `сет ${t.setup} · кадр ${t.shot} · дубль ${t.take} (${t.fps} fps)`; }
+  if (kind === "dup50") { n.take = num(t.take) + 1; n.fps = t.fps === "48" ? "24" : "48"; n.pairWith = `кадр ${t.shot} · сет ${t.setup} · дубль ${t.take} (${t.fps} fps)`; }
   S.takes.push(n); S.current = n.id; touch(n); renderSlate(); renderRec(); window.scrollTo(0, 0);
   const names = { take: "Новый дубль", shot: "Новый кадр", setup: "Новый сетап", scene: "Новая сцена", dup50: "Пара в " + n.fps + " fps" };
   toast(`${names[kind]}: ${n.cam} ${n.roll}${n.clip}`, "Отменить", () => { n.deleted = true; touch(n); S.current = t.id; saveLocal(); renderAll(); });
@@ -532,11 +532,11 @@ function pdfHTML() {
   const st = S.settings, rows = sortedTakes();
   const by = new Map(); rows.forEach(t => { if (!by.has(t.scene)) by.set(t.scene, []); by.get(t.scene).push(t); });
   const td = s => `<td>${esc(s)}</td>`;
-  const head = ["Сет/Кадр/Дубль", "Клип · время · TC", "Камера · кодек", "Объектив", "fps · выдержка · ISO · WB", "Высота · наклон · дистанции", "Движение", "Метки / опоры", "Что меняет ИИ", "Свет · условия", "Контроль", "Оценка · заметка"];
+  const head = ["Кадр/Сет/Дубль", "Клип · время · TC", "Камера · кодек", "Объектив", "fps · выдержка · ISO · WB", "Высота · наклон · дистанции", "Движение", "Метки / опоры", "Что меняет ИИ", "Свет · условия", "Контроль", "Оценка · заметка"];
   const css = `*{box-sizing:border-box}body,div{font-family:Arial,Helvetica,sans-serif;color:#111}h1{font-size:20px;margin:0 0 4px}p.m{margin:0 0 10px;font-size:11px;color:#444}h2{font-size:14px;margin:14px 0 6px;color:#1d4f7a}table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}th,td{border:1px solid #bbb;padding:3px 4px;vertical-align:top;overflow-wrap:anywhere}th{background:#e6eef6;text-align:left}tr{page-break-inside:avoid}`;
   return `<style>${css}</style><h1>${esc(st.project)} · ${esc(st.unit)} · ${esc(st.date)}</h1><p class="m">Режиссёр: ${esc(st.director)} · Оператор: ${esc(st.dp)} · AI-супервайзер: ${esc(st.supervisor)} · Дублей: ${rows.length} · Сформировано: ${new Date().toLocaleString("ru-RU")}</p>` +
     [...by.entries()].map(([sc, arr]) => `<h2>Сцена ${esc(sc)}</h2><table><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${arr.map(t => `<tr>${[
-      `${t.setup} / ${t.shot} / ${t.take}`,
+      `${t.shot} / ${t.setup} / ${t.take}`,
       [simple() ? "кам " + t.cam : t.cam + " " + t.roll + t.clip, t.tStart && ("⏱ " + t.tStart + (t.tEnd ? "–" + t.tEnd : "")), t.tcIn && ("TC " + t.tcIn + (t.tcOut ? "–" + t.tcOut : ""))].filter(Boolean).join("\n"),
       [t.camera, t.codec, t.sensor].filter(Boolean).join(" · "),
       [t.lens, t.focal && (t.focal + " мм" + (t.focalEnd ? "→" + t.focalEnd + " мм" : "")), t.tstop && ("T" + t.tstop), t.focusDist && ("фокус " + t.focusDist + " м"), (t.filters || []).filter(x => x !== "нет").join(", ")].filter(Boolean).join(" · "),
