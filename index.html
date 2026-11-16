@@ -203,6 +203,11 @@ textarea { min-height: 72px; resize: vertical; }
 .board .bm div { min-height: 0; overflow: hidden; }
 [hidden] { display: none !important; }
 .board .bn b { font-size: min(38vw, 17vh) !important; }
+
+.preview { position: fixed; inset: 0; z-index: 60; background: #fff; color: #111; overflow: auto; -webkit-overflow-scrolling: touch; touch-action: auto; }
+.preview .pv-bar { position: sticky; top: 0; left: 0; z-index: 2; display: flex; gap: 8px; justify-content: space-between; align-items: center; background: #12161c; color: #e8edf3; padding: calc(8px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); }
+.preview .pv-bar button { min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid #2f3946; background: #222a35; color: #e8edf3; font-weight: 600; }
+.preview .pv-doc { width: 1040px; padding: 12px; background: #fff; }
 /* toast */
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px 14px; z-index: 20; display: flex; gap: 12px; align-items: center; max-width: calc(100% - 32px); }
 .toast button { border: 0; background: none; color: var(--accent); font-weight: 600; }
@@ -460,7 +465,7 @@ function renderSet() {
   const st = S.settings;
   const meta = [["project", "Проект"], ["unit", "Юнит"], ["date", "Дата смены"], ["director", "Режиссёр"], ["dp", "Оператор"], ["supervisor", "AI-супервайзер"]];
   $("#v-set").innerHTML = `<div class="group"><h2>Проект</h2><div class="row">${meta.map(([k, l]) => `<div class="f"><label for="s-${k}">${l}</label><input type="text" id="s-${k}" data-s="${k}" value="${esc(st[k])}"></div>`).join("")}</div></div>
-  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v22. Скрыты ролл/клип, TC, кодек, фильтры, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
+  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v23. Скрыты ролл/клип, TC, кодек, фильтры, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
   <div class="group"><h2>Списки</h2><p class="hint">Одна строка — один вариант. Изменения сразу появляются в форме.</p>${LISTS.map(k => `<div class="f"><label for="l-${k}">${LIST_LABELS[k]}</label><textarea id="l-${k}" data-list="${k}" rows="${Math.min(8, st[k].length + 1)}">${esc(st[k].join("\n"))}</textarea></div>`).join("")}
   <button class="big-btn" id="resetLists">Вернуть списки по умолчанию</button></div>`;
 }
@@ -469,6 +474,7 @@ function renderSet() {
 function renderExp() {
   $("#v-exp").innerHTML = `<div class="group"><h2>Выгрузка</h2>
   <p class="hint">PDF — отчёт по сценам и кадрам для режиссёра. CSV открывается в Excel и Google Таблицах. На iPhone откроется меню «Поделиться» — можно сразу отправить в Telegram.</p>
+  <button class="big-btn" id="expView">Посмотреть отчёт</button>
   <button class="big-btn primary" id="expPdf">Скачать PDF-отчёт</button>
   <button class="big-btn" id="expCsv">Скачать таблицу CSV</button>
   <p class="hint" id="expMsg"></p></div>
@@ -649,6 +655,7 @@ function pdfHTML() {
 }
 $("#v-exp").addEventListener("click", async e => {
   const id = e.target.id;
+  if (id === "expView") return openPreview();
   if (id === "expCsv") return saveFile(fileBase() + ".csv", csv());
   if (id === "expJson") return saveFile(fileBase() + "_backup.json", JSON.stringify({ app: "onset-log", version: 1, savedAt: new Date().toISOString(), settings: S.settings, settingsUpdated: S.settingsUpdated, takes: S.takes }, null, 1));
   if (id === "expPdf") {
@@ -669,9 +676,9 @@ $("#v-exp").addEventListener("change", e => {
       const byId = new Map(S.takes.map(t => [t.id, t]));
       d.takes.forEach(r => { const l = byId.get(r.id); if (!l || (r.updated || 0) > (l.updated || 0)) byId.set(r.id, r); });
       S.takes = [...byId.values()].sort((a, b) => a.created - b.created);
-      if (d.settings && (d.settingsUpdated || 0) > (S.settingsUpdated || 0)) { S.settings = { ...structuredClone(DEFAULT_SETTINGS), ...d.settings }; S.settingsUpdated = d.settingsUpdated; queueSettings(); }
+      if (d.settings) { S.settings = { ...structuredClone(DEFAULT_SETTINGS), ...d.settings }; S.settingsUpdated = Date.now(); queueSettings(); }
       S.takes.forEach(t => queueTake(t.id, true)); if (!cur()) S.current = live()[live().length - 1]?.id;
-      saveLocal(); renderAll(); toast("Копия восстановлена: " + d.takes.length + " дубл.");
+      saveLocal(); renderAll(); toast("Копия восстановлена: " + d.takes.length + " дубл., справочники обновлены");
     } catch (err) { toast("Это не файл копии журнала"); }
     e.target.value = "";
   };
@@ -690,7 +697,7 @@ function openBoard() {
   d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)} · КАМ ${esc(t.cam)}</span></div>
   <div class="bn"><div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сет</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div></div>
   <div class="bm">${meta.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
-  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v22</div>`;
+  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v23</div>`;
   d.addEventListener("click", () => d.remove());
   document.body.appendChild(d);
   requestAnimationFrame(() => d.querySelectorAll(".bn b").forEach(el => {
@@ -723,6 +730,15 @@ function updateRec() {
   if (!live && dot) dot.remove();
 }
 setInterval(updateRec, 1000);
+
+/* ---------- report preview ---------- */
+function openPreview() {
+  const d = document.createElement("div"); d.className = "preview"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Просмотр отчёта");
+  d.innerHTML = `<div class="pv-bar"><span>Просмотр отчёта · ${live().length} дубл.</span><span style="display:flex;gap:8px"><button id="pvPdf">Скачать PDF</button><button id="pvClose">Закрыть</button></span></div><div class="pv-doc">${pdfHTML()}</div>`;
+  d.querySelector("#pvClose").onclick = () => d.remove();
+  d.querySelector("#pvPdf").onclick = () => { d.remove(); $("#expPdf").click(); };
+  document.body.appendChild(d);
+}
 /* ---------- boot ---------- */
 loadLocal(); renderAll(); show("rec");
 try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
