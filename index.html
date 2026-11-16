@@ -62,6 +62,7 @@ button, .chip, .step { -webkit-user-select: none; user-select: none; -webkit-tap
 .slate div:last-child { border-right: 0; }
 .slate small { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .slate b { font-family: var(--font-mono); font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.slate .sd { grid-column: 1 / -1; border-top: 1px solid var(--line); border-right: 0; font-size: 13px; color: var(--fg); padding: 6px 8px; }
 .slate .clip { grid-column: 1 / -1; border-top: 1px solid var(--line); border-right: 0; display: flex; justify-content: space-between; gap: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--mark); }
 .tabs { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; }
 .tab { flex: 1 0 auto; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 14px; }
@@ -273,10 +274,11 @@ const DEFAULT_SETTINGS = {
   moves: ["статика", "долли", "слайдер", "ручная", "стедикам", "кран / евромаунт", "панорама", "вертиго-зум"],
   markers: ["крестики (тейп)", "линии / полосы", "мячики", "боксы", "систенд", "пенокартон"],
   aiTasks: ["замена фона", "достройка окружения", "замена предмета", "погода", "время суток", "костюм", "волосы / борода", "массовка", "транспорт", "полёт / трюк", "рапид", "свет"],
-  weather: ["солнце", "облачно", "дождь", "павильон"]
+  weather: ["солнце", "облачно", "дождь", "павильон"],
+  shots: []
 };
-const LISTS = ["cameras", "lenses", "scenes", "fps", "shutter", "iso", "wb", "tstop", "codec", "filters", "moves", "markers", "aiTasks", "weather"];
-const LIST_LABELS = { cameras: "Камеры", lenses: "Объективы (фокусное берётся из числа в строке)", scenes: "Сцены", fps: "Частоты кадров", shutter: "Выдержка / угол", iso: "ISO / EI", wb: "Баланс белого", tstop: "Диафрагма (T)", codec: "Кодек / формат", filters: "Фильтры", moves: "Движение камеры", markers: "Метки и опоры", aiTasks: "Что меняет ИИ", weather: "Погода / условия" };
+const LISTS = ["cameras", "lenses", "scenes", "fps", "shutter", "iso", "wb", "tstop", "codec", "filters", "moves", "markers", "aiTasks", "weather", "shots"];
+const LIST_LABELS = { cameras: "Камеры", lenses: "Объективы (фокусное берётся из числа в строке)", scenes: "Сцены", fps: "Частоты кадров", shutter: "Выдержка / угол", iso: "ISO / EI", wb: "Баланс белого", tstop: "Диафрагма (T)", codec: "Кодек / формат", filters: "Фильтры", moves: "Движение камеры", markers: "Метки и опоры", aiTasks: "Что меняет ИИ", weather: "Погода / условия", shots: "Кадры по раскадровке (одна строка: 1-3 · описание)" };
 
 /* ---------- field schema ---------- */
 const GROUPS = [
@@ -342,6 +344,11 @@ function freshTake() {
     lens: "", focal: "", focalEnd: "", tstop: "", focusDist: "", camHeight: "", tilt: "", distActor: "", distBg: "",
     move: "статика", speed: "", moveLen: "", moveNote: "", aiTask: [], markers: [], markersNote: "", characters: "", lightK: "", weather: "", lightChange: false, pairWith: "",
     plate: false, grey: false, grid: false, setupPhoto: false, rating: "", note: "", photos: [] };
+}
+function shotDesc(t) {
+  const key = String(sceneShort(t.scene)).trim() + "-" + String(t.shot).trim();
+  const line = (S.settings.shots || []).find(x => { const m = String(x).match(/^\s*([^\s·]+)\s*·?/); return m && m[1] === key; });
+  return line ? String(line).replace(/^\s*[^\s·]+\s*·?\s*/, "") : "";
 }
 const simple = () => S.settings.simple !== false;
 const live = () => S.takes.filter(t => !t.deleted);
@@ -411,7 +418,7 @@ function renderSlate() {
   setTimeout(updateRec, 0);
   $("#projName").textContent = `Bator Slate · ${S.settings.project} · ${S.settings.unit}`;
   $("#slate").innerHTML = `<div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сетап</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div>
-  <div class="clip"><span>${esc(t.cam)} · ${simple() ? (t.tStart ? "⏱ " + esc(t.tStart) : "время —") : esc(t.roll) + esc(t.clip)}</span><span>${esc(t.fps)} fps · ${esc(t.focal ? t.focal + " мм" : "мм —")}</span></div>`;
+  <div class="clip"><span>${esc(t.cam)} · ${simple() ? (t.tStart ? "⏱ " + esc(t.tStart) : "время —") : esc(t.roll) + esc(t.clip)}</span><span>${esc(t.fps)} fps · ${esc(t.focal ? t.focal + " мм" : "мм —")}</span></div>${shotDesc(t) ? `<div class="sd">${esc(sceneShort(t.scene))}-${esc(t.shot)} · ${esc(shotDesc(t))}</div>` : ""}`;
 }
 
 /* ---------- render: record form ---------- */
@@ -455,7 +462,7 @@ function renderLog() {
   v.innerHTML = `<button class="big-btn" id="newBlank">＋ Новая пустая запись</button><p class="hint" style="margin-top:12px">${l.length} дубл. · хороших: ${l.filter(t => t.rating === "хороший").length}</p>` + [...by.entries()].map(([sc, arr]) => `<h3 class="scene-h">${esc(sc)}</h3>` + arr.map(t => {
     const r = t.rating === "хороший" ? "good" : t.rating === "запасной" ? "spare" : t.rating === "брак" ? "bad" : "";
     const d = [simple() ? "кам " + t.cam : t.cam + " " + t.roll + t.clip, t.focal ? t.focal + " мм" : "", t.fps ? t.fps + " fps" : "", t.move, (t.aiTask || []).join(", "), t.tStart ? "⏱ " + t.tStart : ""].filter(Boolean).join(" · ");
-    return `<div class="entry ${t.id === S.current ? "current" : ""}"><div><div class="k">Кадр ${esc(t.shot)} · Сет ${esc(t.setup)} · Дубль ${esc(t.take)} ${r ? `<span class="pill ${r}">${esc(t.rating)}</span>` : ""}</div><div class="d">${esc(d)}</div>${t.note ? `<div class="d">${esc(t.note)}</div>` : ""}</div>
+    return `<div class="entry ${t.id === S.current ? "current" : ""}"><div><div class="k">Кадр ${esc(t.shot)} · Сет ${esc(t.setup)} · Дубль ${esc(t.take)} ${r ? `<span class="pill ${r}">${esc(t.rating)}</span>` : ""}</div>${shotDesc(t) ? `<div class="d">${esc(shotDesc(t))}</div>` : ""}<div class="d">${esc(d)}</div>${t.note ? `<div class="d">${esc(t.note)}</div>` : ""}</div>
     <div class="acts"><button data-open="${t.id}">Открыть</button><button class="del ${armedDelete === t.id ? "arm" : ""}" data-del="${t.id}">${armedDelete === t.id ? "Точно?" : "Удалить"}</button></div></div>`;
   }).join("")).join("");
 }
@@ -465,7 +472,7 @@ function renderSet() {
   const st = S.settings;
   const meta = [["project", "Проект"], ["unit", "Юнит"], ["date", "Дата смены"], ["director", "Режиссёр"], ["dp", "Оператор"], ["supervisor", "AI-супервайзер"]];
   $("#v-set").innerHTML = `<div class="group"><h2>Проект</h2><div class="row">${meta.map(([k, l]) => `<div class="f"><label for="s-${k}">${l}</label><input type="text" id="s-${k}" data-s="${k}" value="${esc(st[k])}"></div>`).join("")}</div></div>
-  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v26. Скрыты ролл/клип, TC, кодек, фильтры и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
+  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v27. Скрыты ролл/клип, TC, кодек, фильтры и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
   <div class="group"><h2>Списки</h2><p class="hint">Одна строка — один вариант. Изменения сразу появляются в форме.</p>${LISTS.map(k => `<div class="f"><label for="l-${k}">${LIST_LABELS[k]}</label><textarea id="l-${k}" data-list="${k}" rows="${Math.min(8, st[k].length + 1)}">${esc(st[k].join("\n"))}</textarea></div>`).join("")}
   <button class="big-btn" id="resetLists">Вернуть списки по умолчанию</button></div>`;
 }
@@ -636,10 +643,10 @@ function pdfHTML() {
   const by = new Map(); rows.forEach(t => { if (!by.has(t.scene)) by.set(t.scene, []); by.get(t.scene).push(t); });
   const td = s => `<td>${esc(s)}</td>`;
   const head = ["Кадр/Сет/Дубль", "Клип · время · TC", "Камера · кодек", "Объектив", "fps · выдержка · ISO · WB", "Высота · наклон · дистанции", "Движение", "Метки / опоры", "Что меняет ИИ", "Свет · условия", "Контроль", "Оценка · заметка"];
-  const css = `*{box-sizing:border-box}body,div{font-family:Arial,Helvetica,sans-serif;color:#111}h1{font-size:20px;margin:0 0 4px}p.m{margin:0 0 10px;font-size:11px;color:#444}h2{font-size:14px;margin:14px 0 6px;color:#1d4f7a}table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}th,td{border:1px solid #bbb;padding:3px 4px;vertical-align:top;overflow-wrap:anywhere}th{background:#e6eef6;text-align:left}tr{page-break-inside:avoid}`;
+  const css = `*{box-sizing:border-box}body,div{font-family:Arial,Helvetica,sans-serif;color:#111}h1{font-size:20px;margin:0 0 4px}p.m{margin:0 0 10px;font-size:11px;color:#444}h2{font-size:14px;margin:14px 0 6px;color:#1d4f7a}table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed}th,td{border:1px solid #bbb;padding:3px 4px;vertical-align:top;overflow-wrap:anywhere;white-space:pre-line}th{background:#e6eef6;text-align:left}tr{page-break-inside:avoid}`;
   return `<style>${css}</style><h1>${esc(st.project)} · ${esc(st.unit)} · ${esc(st.date)}</h1><p class="m">Bator Slate · журнал AI-супервайзера · Режиссёр: ${esc(st.director)} · Оператор: ${esc(st.dp)} · AI-супервайзер: ${esc(st.supervisor)} · Дублей: ${rows.length} · Сформировано: ${new Date().toLocaleString("ru-RU")}</p>` +
     [...by.entries()].map(([sc, arr]) => `<h2>Сцена ${esc(sc)}</h2><table><thead><tr>${head.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${arr.map(t => `<tr>${[
-      `${t.shot} / ${t.setup} / ${t.take}`,
+      `${t.shot} / ${t.setup} / ${t.take}` + (shotDesc(t) ? "\n" + shotDesc(t) : ""),
       [simple() ? "кам " + t.cam : t.cam + " " + t.roll + t.clip, t.tStart && ("⏱ " + t.tStart + (t.tEnd ? "–" + t.tEnd : "")), t.tcIn && ("TC " + t.tcIn + (t.tcOut ? "–" + t.tcOut : ""))].filter(Boolean).join("\n"),
       [t.camera, t.codec, t.sensor].filter(Boolean).join(" · "),
       [t.lens, t.focal && (t.focal + " мм" + (t.focalEnd ? "→" + t.focalEnd + " мм" : "")), t.tstop && ("T" + t.tstop), t.focusDist && ("фокус " + t.focusDist + " м"), (t.filters || []).filter(x => x !== "нет").join(", ")].filter(Boolean).join(" · "),
@@ -697,7 +704,7 @@ function openBoard() {
   d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)} · КАМ ${esc(t.cam)}</span></div>
   <div class="bn"><div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сет</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div></div>
   <div class="bm">${meta.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
-  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v26</div>`;
+  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v27</div>`;
   d.addEventListener("click", () => d.remove());
   document.body.appendChild(d);
   requestAnimationFrame(() => d.querySelectorAll(".bn b").forEach(el => {
