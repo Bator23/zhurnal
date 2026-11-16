@@ -460,7 +460,7 @@ function renderSet() {
   const st = S.settings;
   const meta = [["project", "Проект"], ["unit", "Юнит"], ["date", "Дата смены"], ["director", "Режиссёр"], ["dp", "Оператор"], ["supervisor", "AI-супервайзер"]];
   $("#v-set").innerHTML = `<div class="group"><h2>Проект</h2><div class="row">${meta.map(([k, l]) => `<div class="f"><label for="s-${k}">${l}</label><input type="text" id="s-${k}" data-s="${k}" value="${esc(st[k])}"></div>`).join("")}</div></div>
-  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v21. Скрыты ролл/клип, TC, кодек, фильтры, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
+  <div class="group"><h2>Режим</h2><label class="check" for="s-simple"><input type="checkbox" id="s-simple" ${st.simple !== false ? "checked" : ""}>Простой режим: только главные поля</label><p class="hint">Bator Slate v22. Скрыты ролл/клип, TC, кодек, фильтры, наклон и другие редкие поля. Клип потом находим по времени «Мотор/Стоп».</p></div>
   <div class="group"><h2>Списки</h2><p class="hint">Одна строка — один вариант. Изменения сразу появляются в форме.</p>${LISTS.map(k => `<div class="f"><label for="l-${k}">${LIST_LABELS[k]}</label><textarea id="l-${k}" data-list="${k}" rows="${Math.min(8, st[k].length + 1)}">${esc(st[k].join("\n"))}</textarea></div>`).join("")}
   <button class="big-btn" id="resetLists">Вернуть списки по умолчанию</button></div>`;
 }
@@ -684,13 +684,13 @@ function openBoard() {
   const t = cur(); if (!t) return;
   const st = S.settings; const d = document.createElement("div"); d.className = "board"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Хлопушка");
   const filt = (t.filters || []).filter(x => x && x !== "нет").join(", ");
-  const meta = [["Камера", t.cam + (t.camera ? " · " + (t.camera.replace(/\s*\(.*?\)\s*/g, " ").trim().replace(/^ARRI\s*(Alexa\s*)?/i, "") || "Alexa") : "")], ["Объектив", t.lens || "—"], ["Фокусное", !t.lens && t.focal ? t.focal + " мм" : ""],
+  const meta = [["Объектив", t.lens || "—"], ["Фокусное", !t.lens && t.focal ? t.focal + " мм" : ""],
     ["fps", t.fps], ["Выдержка", t.shutter], ["ISO", t.iso], ["ББ", t.wb], ["Диафрагма", t.tstop ? "T" + t.tstop : ""], ["Фокус", t.focusDist ? t.focusDist + " м" : ""], ["Высота", t.camHeight ? t.camHeight + " см" : ""], ["Фильтр", filt], ["Ролл", simple() ? "" : (t.roll || "") + (t.clip || "")]]
     .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== "");
-  d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)}</span></div>
+  d.innerHTML = `<div class="bh"><span>${esc(st.project)}${st.unit ? " · " + esc(st.unit) : ""}</span><span>${esc(st.date)} · КАМ ${esc(t.cam)}</span></div>
   <div class="bn"><div><small>Сцена</small><b>${esc(sceneShort(t.scene))}</b></div><div><small>Кадр</small><b>${esc(t.shot)}</b></div><div><small>Сет</small><b>${esc(t.setup)}</b></div><div><small>Дубль</small><b>${esc(t.take)}</b></div></div>
   <div class="bm">${meta.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join("")}</div>
-  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v21</div>`;
+  <div class="bx">${[st.director && "Реж. " + st.director, st.dp && "Опер. " + st.dp].filter(Boolean).map(esc).join(" · ")}${st.director || st.dp ? " · " : ""}нажми, чтобы закрыть · v22</div>`;
   d.addEventListener("click", () => d.remove());
   document.body.appendChild(d);
   requestAnimationFrame(() => d.querySelectorAll(".bn b").forEach(el => {
